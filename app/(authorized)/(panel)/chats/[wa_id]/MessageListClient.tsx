@@ -9,6 +9,7 @@ import TailWrapper from "./TailWrapper"
 import ReceivedTemplateMessageUI from "./ReceivedTemplateMessageUI"
 import { markAsRead } from "./markAsRead"
 import ReceivedVideoMessageUI from "./ReceivedVideoMessageUI"
+import ReceivedAudioMessageUI from "./ReceivedAudioMessageUI"
 import ReceivedDocumentMessageUI from "./ReceivedDocumentMessageUI"
 import { useSupabase } from "@/components/supabase-provider"
 
@@ -200,6 +201,8 @@ export default function MessageListClient({ from }: { from: string }) {
                                                         return <ReceivedTextMessageUI textMessage={messageBody as TextMessage} />
                                                     case "image":
                                                         return <ReceivedImageMessageUI message={message} />
+                                                    case "audio": // Add this case
+        return <ReceivedAudioMessageUI message={message} />
                                                     case "video":
                                                         return <ReceivedVideoMessageUI message={message} />
                                                     case "template":

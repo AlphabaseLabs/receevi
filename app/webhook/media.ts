@@ -16,7 +16,7 @@ function getFileExtensionFromContentDisposition(contentDisposition: string) {
 }
 
 export async function downloadMedia(imageMessage: WebhookMessage) {
-    const mediaDetails = imageMessage.image || imageMessage.video || imageMessage.document
+    const mediaDetails = imageMessage.image || imageMessage.video || imageMessage.document || imageMessage.audio
     if (!mediaDetails) {
         throw new Error("image details not available in image key")
     }

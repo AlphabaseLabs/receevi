@@ -16,7 +16,7 @@ type Message = {
     recipient_type: "individual";
     messaging_product: "whatsapp";
     to: string;
-    type?: "document" | "image" | "text" | "video" | "template";
+    type?: "document" | "image" | "text" | "video" | "template" | "audio";
     audio?: Media;
     document?: Media;
     video?: Media;

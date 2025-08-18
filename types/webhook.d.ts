@@ -11,7 +11,8 @@ export type WebhookMessage = {
     image?: WebhookImage,
     video?: WebhookImage,
     document?: WebhookImage,
-    type: 'text' | 'reaction' | 'image' | 'video' | 'document',
+    audio?: WebhookImage,
+    type: 'text' | 'reaction' | 'image' | 'video' | 'document' | 'audio',
 }
 
 export type WebhookStatus = {
