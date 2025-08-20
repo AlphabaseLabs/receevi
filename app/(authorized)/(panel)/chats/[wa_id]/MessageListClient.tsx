@@ -2,7 +2,7 @@
 
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react"
 import { DBTables } from "@/lib/enums/Tables"
-import { MessageJson, TemplateMessage, TextMessage } from "@/types/Message"
+import { MessageJson, TemplateMessage, TextMessage, InteractiveMessage } from "@/types/Message"
 import ReceivedImageMessageUI from "./ReceivedImageMessageUI"
 import ReceivedTextMessageUI from "./ReceivedTextMessageUI"
 import TailWrapper from "./TailWrapper"
@@ -11,6 +11,7 @@ import { markAsRead } from "./markAsRead"
 import ReceivedVideoMessageUI from "./ReceivedVideoMessageUI"
 import ReceivedAudioMessageUI from "./ReceivedAudioMessageUI"
 import ReceivedDocumentMessageUI from "./ReceivedDocumentMessageUI"
+import ReceivedInteractiveMessageUI from "./ReceivedInteractiveMessageUI"
 import { useSupabase } from "@/components/supabase-provider"
 
 type UIMessageModel = DBMessage & {
@@ -209,7 +210,12 @@ export default function MessageListClient({ from }: { from: string }) {
                                                         return <ReceivedTemplateMessageUI message={messageBody as TemplateMessage} />
                                                     case "document":
                                                         return <ReceivedDocumentMessageUI message={message} />
+                                                    case "interactive":
+                                                        return <ReceivedInteractiveMessageUI message={messageBody as InteractiveMessage} />
+                                                    case "button":
+                                                        return <ReceivedInteractiveMessageUI message={messageBody as InteractiveMessage} />
                                                     default:
+                                                        console.log('Unsupported message', messageBody)
                                                         return <div>Unsupported message</div>
                                                 }
                                             })()

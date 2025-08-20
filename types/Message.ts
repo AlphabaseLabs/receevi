@@ -29,3 +29,25 @@ export type TemplateMessage = MessageJson & {
 export type ImageMessage = MessageJson & {
     image: ImageMessageBody,
 }
+
+export type InteractiveMessage = MessageJson & {
+    context?: {
+        id: string,
+        from: string
+    },
+    interactive?: {
+        type: 'list_reply' | 'button_reply' | 'product' | 'product_list',
+        list_reply?: {
+            id: string,
+            title: string
+        },
+        button_reply?: {
+            id: string,
+            title: string
+        }
+    },
+    button?: {
+        text: string,
+        payload: string
+    }
+}
