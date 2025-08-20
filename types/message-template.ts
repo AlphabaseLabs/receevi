@@ -18,6 +18,8 @@ export type MessageTemplate = {
     status: string;
     category: string;
     id: string;
+    // Add support for interactive messages
+    interactive?: InteractiveMessage;
 };
 
 export type MessageTemplateComponent =
@@ -92,3 +94,36 @@ export type MessageTemplateButton = {
     type: "URL"
     url: string
 });
+
+// Add new types for interactive messages
+export type InteractiveMessage = {
+    type: 'list' | 'button' | 'product' | 'product_list';
+    body?: {
+        text: string;
+    };
+    action: {
+        button?: string;
+        sections?: InteractiveSection[];
+        buttons?: InteractiveButton[];
+    };
+    messaging_product: string;
+};
+
+export type InteractiveSection = {
+    title: string;
+    rows: InteractiveRow[];
+};
+
+export type InteractiveRow = {
+    id: string;
+    title: string;
+    description?: string;
+};
+
+export type InteractiveButton = {
+    type: 'reply';
+    reply: {
+        id: string;
+        title: string;
+    };
+};

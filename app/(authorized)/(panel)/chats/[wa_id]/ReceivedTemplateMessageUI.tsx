@@ -1,5 +1,5 @@
 import { TemplateMessage } from "@/types/Message";
-import { MessageTemplateBody, MessageTemplateButtons, MessageTemplateFooter, MessageTemplateHeader } from "@/types/message-template";
+import { MessageTemplateBody, MessageTemplateButtons, MessageTemplateFooter, MessageTemplateHeader, InteractiveSection, InteractiveRow } from "@/types/message-template";
 import { CopyIcon, DownloadIcon, FileIcon, PhoneIcon, ReplyIcon, SquareArrowOutUpRightIcon } from "lucide-react";
 
 function MessageTemplateHeaderComp(props: { component: MessageTemplateHeader }) {
@@ -115,20 +115,83 @@ function MessageTemplateButtonsComp(props: { component: MessageTemplateButtons }
 }
 
 export default function ReceivedTemplateMessageUI(props: { message: TemplateMessage }) {
+    // Check if the message has the traditional components structure
+    if (props.message.template.components && props.message.template.components.length > 0) {
+        return (
+            <div className="max-w-sm">
+                {props.message.template.components.map((component, index) => {
+                    switch (component.type) {
+                        case 'HEADER':
+                            return <MessageTemplateHeaderComp key={index} component={component} />
+                        case 'BODY':
+                            return <MessageTemplateBodyComp key={index} component={component} />
+                        case 'FOOTER':
+                            return <MessageTemplateFooterComp key={index} component={component} />
+                        case 'BUTTONS':
+                            return <MessageTemplateButtonsComp key={index} component={component} />
+                        default:
+                            return null;
+                    }
+                })}
+            </div>
+        )
+    }
+
+    // Handle interactive template messages (like the example provided)
+    if (props.message.template.interactive) {
+        const interactive = props.message.template.interactive;
+        
+        return (
+            <div className="max-w-sm">
+                {/* Interactive Body */}
+                {interactive.body && (
+                    <div className="pb-2">
+                        {interactive.body.text}
+                    </div>
+                )}
+                
+                {/* Interactive Action */}
+                {interactive.action && (
+                    <div className="border-t border-slate-300 pt-2">
+                        {interactive.action.button && (
+                            <div className="text-center text-[#00a5f4] font-medium mb-2">
+                                {interactive.action.button}
+                            </div>
+                        )}
+                        
+                        {/* Handle List Type */}
+                        {interactive.type === 'list' && interactive.action.sections && (
+                            <div className="space-y-2">
+                                {interactive.action.sections.map((section: InteractiveSection, sectionIndex: number) => (
+                                    <div key={sectionIndex}>
+                                        {section.title && (
+                                            <div className="font-medium text-sm text-gray-700 mb-1">
+                                                {section.title}
+                                            </div>
+                                        )}
+                                        {section.rows && (
+                                            <div className="space-y-1">
+                                                {section.rows.map((row: InteractiveRow, rowIndex: number) => (
+                                                    <div key={rowIndex} className="text-sm text-gray-600">
+                                                        {row.title}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    // Fallback for unrecognized template structure
     return (
-        <div className="max-w-sm">
-            {props.message.template.components.map((component, index) => {
-                switch (component.type) {
-                    case 'HEADER':
-                        return <MessageTemplateHeaderComp key={index} component={component} />
-                    case 'BODY':
-                        return <MessageTemplateBodyComp key={index} component={component} />
-                    case 'FOOTER':
-                        return <MessageTemplateFooterComp key={index} component={component} />
-                    case 'BUTTONS':
-                        return <MessageTemplateButtonsComp key={index} component={component} />
-                }
-            })}
+        <div className="max-w-sm text-gray-500 text-sm">
+            Template message (format not recognized)
         </div>
     )
 }
