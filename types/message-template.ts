@@ -20,6 +20,8 @@ export type MessageTemplate = {
     id: string;
     // Add support for interactive messages
     interactive?: InteractiveMessage;
+    // Add support for interactive text messages
+    text?: any; // This can be a string or an object with more details
 };
 
 export type MessageTemplateComponent =
