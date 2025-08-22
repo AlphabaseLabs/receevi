@@ -182,8 +182,20 @@ export default function ReceivedTemplateMessageUI(props: { message: TemplateMess
                                 ))}
                             </div>
                         )}
+                        
                     </div>
                 )}
+            </div>
+        )
+    }
+
+    // ✅ Handle simple template with text body
+    if (props.message.template.text && props.message.template.text.body) {
+        return (
+            <div className="max-w-sm">
+                <div className="p-2">
+                    {props.message.template.text.body}
+                </div>
             </div>
         )
     }
