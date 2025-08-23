@@ -129,32 +129,36 @@ function processTemplateBody(templateText: string, parameters: any[]): string {
     return processedText;
 }
 
-// Template definitions - in a real app, fetch these from your database
-const templateDefinitions: { [key: string]: any } = {
-    "appointment_reminder": {
-        components: [
-            {
-                "text": "Hi *{{1}}*, your appointment is scheduled with *{{2}}* for {{3}} today at *{{4}}*. Kindly choose an option below to confirm or cancel your appointment.",
-                "type": "BODY"
-            },
-            {
-                "type": "BUTTONS",
-                "buttons": [
-                    {"text": "Yes I'll come", "type": "QUICK_REPLY"},
-                    {"text": "I need to cancel", "type": "QUICK_REPLY"}
-                ]
-            }
-        ]
-    }
-    // Add other template definitions here
-};
+// // Template definitions - in a real app, fetch these from your database
+// const templateDefinitions: { [key: string]: any } = {
+//     "appointment_reminder": {
+//         components: [
+//             {
+//                 "text": "Hi *{{1}}*, your appointment is scheduled with *{{2}}* for {{3}} today at *{{4}}*. Kindly choose an option below to confirm or cancel your appointment.",
+//                 "type": "BODY"
+//             },
+//             {
+//                 "type": "BUTTONS",
+//                 "buttons": [
+//                     {"text": "Yes I'll come", "type": "QUICK_REPLY"},
+//                     {"text": "I need to cancel", "type": "QUICK_REPLY"}
+//                 ]
+//             }
+//         ]
+//     }
+//     // Add other template definitions here
+// };
 
-// Helper function to get template definition
-function getTemplateDefinition(templateName: string) {
-    return templateDefinitions[templateName];
-}
+// // Helper function to get template definition
+// function getTemplateDefinition(templateName: string) {
+//     return templateDefinitions[templateName];
+// }
 
-export default function ReceivedTemplateMessageUI(props: { message: TemplateMessage }) {
+export default function ReceivedTemplateMessageUI(props: { message: TemplateMessage, templates: { [key: string]: any } }) {
+  // const supabase = useSupabase();              
+  // const [templateDefinitions, setTemplateDefinitions] = useState<{ [key: string]: any }>({});
+
+
     // Check if the message has the traditional components structure
     if (props.message.template.components && props.message.template.components.length > 0) {
         return (
@@ -181,7 +185,7 @@ export default function ReceivedTemplateMessageUI(props: { message: TemplateMess
     if (props.message.template.template && props.message.template.template.components) {
         const template = props.message.template.template;
         const components = template.components;
-        const templateDef = getTemplateDefinition(template.name);
+        const templateDef = props.templates[template.name];
         
         // Collect body parameters and buttons from the components
         let bodyParameters: any[] = [];
@@ -207,7 +211,7 @@ export default function ReceivedTemplateMessageUI(props: { message: TemplateMess
                                     <div key={`body-${defIndex}`} className="pb-2">
                                         <div dangerouslySetInnerHTML={{
                                             __html: processedBodyText
-                                                .replace(/\*([^*]+)\*/g, '<strong>$1</strong>')
+                                                .replace(/\*([^*]+)\*/g, '$1')
                                                 .replace(/\n/g, '<br>')
                                         }} />
                                     </div>

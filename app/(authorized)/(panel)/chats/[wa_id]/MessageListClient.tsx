@@ -31,6 +31,7 @@ function addDateToMessages(withoutDateArray: DBMessage[]): UIMessageModel[] {
 export default function MessageListClient({ from }: { from: string }) {
     const { supabase } = useSupabase()
     const [stateMessages, setMessages] = useState<UIMessageModel[]>(addDateToMessages([]))
+    const [templateDefinitions, setTemplateDefinitions] = useState<{ [key: string]: any }>({})
     const [additionalMessagesLoading, setAdditionalMessagesLoading] = useState<boolean>(false)
     const [noMoreMessages, setNoMoreMessages] = useState<boolean>(false)
     const [newMessageId, setNewMessageId] = useState<number | undefined>()
@@ -54,6 +55,21 @@ export default function MessageListClient({ from }: { from: string }) {
         const { data: messages, error } = await query
         if (error) throw error
         return messages;
+    }
+
+    async function fetchTemplates() {
+        const { data, error } = await supabase
+            .from("message_template")
+            .select("name, components");
+        if (error) {
+            console.error("Error fetching templates:", error);
+            return {};
+        }
+        const templatesMap: { [key: string]: any } = {};
+        data.forEach((template: any) => {
+            templatesMap[template.name] = template;
+        });
+        return templatesMap;
     }
 
     function markAsReadUnreadMessages(messages: DBMessage[]) {
@@ -119,6 +135,8 @@ export default function MessageListClient({ from }: { from: string }) {
     useEffect(() => {
         (async () => {
             const messages = await fetchMessages()
+            const templates = await fetchTemplates()
+            setTemplateDefinitions(templates)
             markAsReadUnreadMessages(messages)
             let unreadId;
             for (let i = 0; i < messages.length; i++) {
@@ -207,7 +225,7 @@ export default function MessageListClient({ from }: { from: string }) {
                                                     case "video":
                                                         return <ReceivedVideoMessageUI message={message} />
                                                     case "template":
-                                                        return <ReceivedTemplateMessageUI message={messageBody as TemplateMessage} />
+                                                        return <ReceivedTemplateMessageUI message={messageBody as TemplateMessage} templates={templateDefinitions} />
                                                     case "document":
                                                         return <ReceivedDocumentMessageUI message={message} />
                                                     case "interactive":
