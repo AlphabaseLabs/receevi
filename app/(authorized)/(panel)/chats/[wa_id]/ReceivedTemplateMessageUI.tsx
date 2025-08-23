@@ -114,6 +114,46 @@ function MessageTemplateButtonsComp(props: { component: MessageTemplateButtons }
     }
 }
 
+// Helper function to process template body text with parameters
+function processTemplateBody(templateText: string, parameters: any[]): string {
+    if (!parameters || parameters.length === 0) return templateText;
+    
+    let processedText = templateText;
+    parameters.forEach((param, index) => {
+        const placeholder = `{{${index + 1}}}`;
+        if (param.type === "text" && param.text) {
+            processedText = processedText.replace(placeholder, param.text);
+        }
+    });
+    
+    return processedText;
+}
+
+// Template definitions - in a real app, fetch these from your database
+const templateDefinitions: { [key: string]: any } = {
+    "appointment_reminder": {
+        components: [
+            {
+                "text": "Hi *{{1}}*, your appointment is scheduled with *{{2}}* for {{3}} today at *{{4}}*. Kindly choose an option below to confirm or cancel your appointment.",
+                "type": "BODY"
+            },
+            {
+                "type": "BUTTONS",
+                "buttons": [
+                    {"text": "Yes I'll come", "type": "QUICK_REPLY"},
+                    {"text": "I need to cancel", "type": "QUICK_REPLY"}
+                ]
+            }
+        ]
+    }
+    // Add other template definitions here
+};
+
+// Helper function to get template definition
+function getTemplateDefinition(templateName: string) {
+    return templateDefinitions[templateName];
+}
+
 export default function ReceivedTemplateMessageUI(props: { message: TemplateMessage }) {
     // Check if the message has the traditional components structure
     if (props.message.template.components && props.message.template.components.length > 0) {
@@ -133,6 +173,80 @@ export default function ReceivedTemplateMessageUI(props: { message: TemplateMess
                             return null;
                     }
                 })}
+            </div>
+        )
+    }
+
+    // Handle nested WhatsApp Business API template structure
+    if (props.message.template.template && props.message.template.template.components) {
+        const template = props.message.template.template;
+        const components = template.components;
+        const templateDef = getTemplateDefinition(template.name);
+        
+        // Collect body parameters and buttons from the components
+        let bodyParameters: any[] = [];
+        let buttonComponents: any[] = [];
+        
+        components.forEach((component: any) => {
+            if (component.type.toLowerCase() === 'body') {
+                bodyParameters = component.parameters || [];
+            } else if (component.type.toLowerCase() === 'button') {
+                buttonComponents.push(component);
+            }
+        });
+        
+        return (
+            <div className="max-w-sm">
+                {/* Render Body */}
+                {templateDef && templateDef.components && (
+                    <>
+                        {templateDef.components.map((defComponent: any, defIndex: number) => {
+                            if (defComponent.type === 'BODY') {
+                                const processedBodyText = processTemplateBody(defComponent.text, bodyParameters);
+                                return (
+                                    <div key={`body-${defIndex}`} className="pb-2">
+                                        <div dangerouslySetInnerHTML={{
+                                            __html: processedBodyText
+                                                .replace(/\*([^*]+)\*/g, '<strong>$1</strong>')
+                                                .replace(/\n/g, '<br>')
+                                        }} />
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })}
+                        
+                        {/* Render Buttons */}
+                        {templateDef.components.map((defComponent: any, defIndex: number) => {
+                            if (defComponent.type === 'BUTTONS' && defComponent.buttons) {
+                                return (
+                                    <div key={`buttons-${defIndex}`}>
+                                        {defComponent.buttons.map((button: any, buttonIndex: number) => (
+                                            <div key={buttonIndex}>
+                                                <div className="border-t border-b-0 my-2 border-slate-300"></div>
+                                                <div className="flex flex-row items-center gap-2 justify-center p-1">
+                                                    <div className="cursor-pointer flex flex-row items-center">
+                                                        <ReplyIcon className="w-4 h-4 text-[#00a5f4] inline-block" />
+                                                        &nbsp;&nbsp;
+                                                        <span className="text-[#00a5f4]">{button.text}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })}
+                    </>
+                )}
+                
+                {/* Fallback if template definition not found */}
+                {!templateDef && (
+                    <div className="pb-2">
+                        <span className="text-gray-500">Template: {template.name}</span>
+                    </div>
+                )}
             </div>
         )
     }
@@ -189,7 +303,7 @@ export default function ReceivedTemplateMessageUI(props: { message: TemplateMess
         )
     }
 
-    // ✅ Handle simple template with text body
+    // Handle simple template with text body
     if (props.message.template.text && props.message.template.text.body) {
         return (
             <div className="max-w-sm">
