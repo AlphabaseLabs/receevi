@@ -22,6 +22,18 @@ export type MessageTemplate = {
     interactive?: InteractiveMessage;
     // Add support for interactive text messages
     text?: any; // This can be a string or an object with more details
+    template?: {
+        name: string;
+        language: {
+          code: string;
+        };
+        components: Array<{
+          type: string;
+          parameters?: any[];
+          index?: string;
+          sub_type?: string;
+        }>;
+    };
 };
 
 export type MessageTemplateComponent =

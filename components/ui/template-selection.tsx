@@ -396,7 +396,7 @@ export default function TemplateSelection({ children, onTemplateSubmit }: { chil
                                             return (
                                                 <div key={template.id} className={cn("flex items-center border-2 border-transparent rounded-lg", selectedTemplate?.id == template.id ? 'border-black' : '')}>
                                                     <button className="text-sm bg-white shadow border rounded-lg p-2 text-left w-full" onClick={() => setSelectedTemplate(template)}>
-                                                        <ReceivedTemplateMessageUI message={{ template: template, id: template.id, timestamp: '', type: 'template' }} />
+                                                        {/* <ReceivedTemplateMessageUI message={{ template: template, id: template.id, timestamp: '', type: 'template' }} /> */}
                                                     </button>
                                                 </div>
                                             )
@@ -410,7 +410,7 @@ export default function TemplateSelection({ children, onTemplateSubmit }: { chil
                             <div className="w-full flex flex-row justify-around gap-8 h-[60vh]">
                                 <div className="flex items-center">
                                     <div className="text-sm bg-white shadow border rounded-lg p-2 text-left w-64">
-                                        <ReceivedTemplateMessageUI message={{ template: selectedTemplate, id: selectedTemplate.id, timestamp: '', type: 'template' }} />
+                                        {/* <ReceivedTemplateMessageUI message={{ template: selectedTemplate, id: selectedTemplate.id, timestamp: '', type: 'template' }} /> */}
                                     </div>
                                 </div>
                                 <div className="w-96 flex flex-col gap-2">
