@@ -27,10 +27,12 @@ import { AddContactDialog } from "./AddContactDialog"
 import { ContactsTable } from "./ContactsTable"
 import { fetchData, itemsPerPage } from "./fetchData"
 import { AddBulkContactsDialog } from "./AddBulkContactsDialog"
+import ContactBrowserFactory from "@/lib/repositories/contacts/ContactBrowserFactory"
 import { useSupabase } from "@/components/supabase-provider"
 
 export default function ContactsClient() {
     const { supabase } = useSupabase()
+    const [isExporting, setIsExporting] = useState(false)
     const columns = useMemo<ColumnDef<Contact>[]>(
         () => [
             // {
@@ -159,6 +161,46 @@ export default function ContactsClient() {
         },
     })
 
+    async function exportAllContactsAsCsv() {
+        try {
+            setIsExporting(true)
+            const repo = ContactBrowserFactory.getInstance(supabase)
+            const csvRows: string[] = []
+            // Header inspired by example-bulk-contacts.csv
+            csvRows.push(["Name","Number (with country code)","Tags (Comma separated)"].join(","))
+
+            const pageSize = 1000
+            let page = 0
+            while (true) {
+                const offset = page * pageSize
+                const { rows } = await repo.getContacts(undefined, { column: 'created_at', options: { ascending: false } }, { limit: pageSize, offset }, false)
+                if (!rows || rows.length === 0) break
+                for (const c of rows) {
+                    const name = (c.profile_name ?? '').toString().replaceAll('"','""')
+                    const number = (c.wa_id ?? '').toString().replaceAll('"','""')
+                    const tags = (c.tags ?? []).join("; ").replaceAll('"','""')
+                    // Quote fields to be safe; use semicolon between tags to avoid CSV conflicts
+                    csvRows.push([`"${name}"`,`"${number}"`,`"${tags}"`].join(","))
+                }
+                if (rows.length < pageSize) break
+                page++
+            }
+
+            const blob = new Blob([csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            const now = new Date().toISOString().slice(0,19).replaceAll(':','-')
+            a.download = `contacts-export-${now}.csv`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+        } finally {
+            setIsExporting(false)
+        }
+    }
+
     return (
         <div className="m-4 bg-white rounded-xl p-4">
             <div className="flex justify-between items-center py-4">
@@ -169,12 +211,16 @@ export default function ContactsClient() {
                     className="max-w-sm"
                 />
                 <div className="space-x-2">
+                    <Button className="ml-auto" onClick={exportAllContactsAsCsv} disabled={isExporting}>
+                        {isExporting ? 'Exporting…' : 'Export Contacts in CSV'}
+                    </Button>
                     <AddBulkContactsDialog onSuccessfulAdd={dataQuery.refetch}>
                         <Button className="ml-auto">Add Bulk Contacts via CSV</Button>
                     </AddBulkContactsDialog>
                     <AddContactDialog onSuccessfulAdd={dataQuery.refetch}>
                         <Button className="ml-auto">Add Contact</Button>
                     </AddContactDialog>
+                    
                 </div>
             </div>
             <div className="rounded-md border relative">
