@@ -19,6 +19,7 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from "react"
 import { Contact } from "@/types/contact"
@@ -33,6 +34,10 @@ import { useSupabase } from "@/components/supabase-provider"
 export default function ContactsClient() {
     const { supabase } = useSupabase()
     const [isExporting, setIsExporting] = useState(false)
+    const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+    const [exportStartDate, setExportStartDate] = useState("")
+    const [exportEndDate, setExportEndDate] = useState("")
+    const [exportError, setExportError] = useState("")
     const columns = useMemo<ColumnDef<Contact>[]>(
         () => [
             // {
@@ -161,7 +166,19 @@ export default function ContactsClient() {
         },
     })
 
-    async function exportAllContactsAsCsv() {
+    function toIsoDateStart(dateStr: string): string | undefined {
+        if (!dateStr) return undefined
+        const d = new Date(`${dateStr}T00:00:00.000Z`)
+        return d.toISOString()
+    }
+
+    function toIsoDateEnd(dateStr: string): string | undefined {
+        if (!dateStr) return undefined
+        const d = new Date(`${dateStr}T23:59:59.999Z`)
+        return d.toISOString()
+    }
+
+    async function exportAllContactsAsCsv(startDate?: string, endDate?: string) {
         try {
             setIsExporting(true)
             const repo = ContactBrowserFactory.getInstance(supabase)
@@ -173,7 +190,14 @@ export default function ContactsClient() {
             let page = 0
             while (true) {
                 const offset = page * pageSize
-                const { rows } = await repo.getContacts(undefined, { column: 'created_at', options: { ascending: false } }, { limit: pageSize, offset }, false)
+                const filters: any[] = []
+                if (startDate) {
+                    filters.push({ column: 'created_at', operator: 'gte', value: startDate })
+                }
+                if (endDate) {
+                    filters.push({ column: 'created_at', operator: 'lte', value: endDate })
+                }
+                const { rows } = await repo.getContacts(filters.length ? filters : undefined, { column: 'created_at', options: { ascending: false } }, { limit: pageSize, offset }, false)
                 if (!rows || rows.length === 0) break
                 for (const c of rows) {
                     const name = (c.profile_name ?? '').toString().replaceAll('"','""')
@@ -211,8 +235,8 @@ export default function ContactsClient() {
                     className="max-w-sm"
                 />
                 <div className="space-x-2">
-                    <Button className="ml-auto" onClick={exportAllContactsAsCsv} disabled={isExporting}>
-                        {isExporting ? 'Exporting…' : 'Export Contacts in CSV'}
+                    <Button className="ml-auto" onClick={() => { setExportError(""); setIsExportDialogOpen(true) }} disabled={isExporting}>
+                        Export Contacts in CSV
                     </Button>
                     <AddBulkContactsDialog onSuccessfulAdd={dataQuery.refetch}>
                         <Button className="ml-auto">Add Bulk Contacts via CSV</Button>
@@ -255,6 +279,43 @@ export default function ContactsClient() {
                     </Button>
                 </div>
             </div>
+            <Dialog open={isExportDialogOpen} onOpenChange={(open) => { if (!isExporting) setIsExportDialogOpen(open) }}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Export Contacts</DialogTitle>
+                        <DialogDescription>
+                            Select a date range to filter by contact creation date. Leave blank for all contacts.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-2">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <label className="col-span-2 text-right text-sm" htmlFor="export-start">Start date</label>
+                            <Input id="export-start" type="date" value={exportStartDate} onChange={(e) => setExportStartDate(e.target.value)} className="col-span-2" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <label className="col-span-2 text-right text-sm" htmlFor="export-end">End date</label>
+                            <Input id="export-end" type="date" value={exportEndDate} onChange={(e) => setExportEndDate(e.target.value)} className="col-span-2" />
+                        </div>
+                        {exportError && <span className="text-red-500 text-sm">{exportError}</span>}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsExportDialogOpen(false)} disabled={isExporting}>Cancel</Button>
+                        <Button onClick={async () => {
+                            if (exportStartDate && exportEndDate && exportStartDate > exportEndDate) {
+                                setExportError('Start date must be before end date')
+                                return
+                            }
+                            setExportError('')
+                            const startIso = toIsoDateStart(exportStartDate)
+                            const endIso = toIsoDateEnd(exportEndDate)
+                            await exportAllContactsAsCsv(startIso, endIso)
+                            setIsExportDialogOpen(false)
+                        }} disabled={isExporting}>
+                            {isExporting ? 'Exporting…' : 'Export'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
