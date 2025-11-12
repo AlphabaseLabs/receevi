@@ -104,9 +104,9 @@ export default function MessageListClient({ from }: { from: string }) {
                     }
                 })
                 .subscribe()
-                return () => { supabase.removeChannel(channel) }
+            return () => { supabase.removeChannel(channel) }
         }
-        return () => {}
+        return () => { }
     }, [supabase, stateMessages, setMessages])
 
     useEffect(() => {
@@ -209,7 +209,8 @@ export default function MessageListClient({ from }: { from: string }) {
                                 }
                             })()
                         }
-                        <div className="my-1" >
+                        <div className={`my-1 flex ${messageBody.to ? 'justify-end' : 'justify-start'}`}>
+                            <div className="max-w-[50%]">
                             <TailWrapper showTail={index === 0 ? true : stateMessages[index].message.from !== stateMessages[index - 1].message.from} isSent={!!messageBody.to}>
                                 <div className="px-2 pt-2 flex flex-col items-end gap-1 relative">
                                     <div className="pb-2 inline-block">
@@ -221,7 +222,7 @@ export default function MessageListClient({ from }: { from: string }) {
                                                     case "image":
                                                         return <ReceivedImageMessageUI message={message} />
                                                     case "audio": // Add this case
-        return <ReceivedAudioMessageUI message={message} />
+                                                        return <ReceivedAudioMessageUI message={message} />
                                                     case "video":
                                                         return <ReceivedVideoMessageUI message={message} />
                                                     case "template":
@@ -243,6 +244,7 @@ export default function MessageListClient({ from }: { from: string }) {
                                     <span className="text-xs pb-2 pe-2 text-bubble-meta absolute bottom-0 end-0">{messageDateTime.toLocaleTimeString().toLowerCase()}</span>
                                 </div>
                             </TailWrapper>
+                            </div>
                         </div>
                     </div>
                 )
