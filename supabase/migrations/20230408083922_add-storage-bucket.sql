@@ -1,9 +1,11 @@
-create policy "Give download permission to authenticated user 1ps738_0"
-on "storage"."objects"
-as permissive
-for select
-to authenticated
-using ((bucket_id = 'media'::text));
+DROP POLICY IF EXISTS "Give download permission to authenticated user 1ps738_0" ON "storage"."objects";
+
+CREATE POLICY "Give download permission to authenticated user 1ps738_0"
+ON "storage"."objects"
+AS permissive
+FOR SELECT
+TO authenticated
+USING ((bucket_id = 'media'::text));
 
 
 

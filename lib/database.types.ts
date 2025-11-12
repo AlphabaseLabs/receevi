@@ -18,45 +18,48 @@ export type Database = {
         Row: {
           appointment_uuid: string | null
           cancel_by: string | null
-          contact_id: number
           created_at: string
           id: string
           patient_response: string | null
           send_by: string
           status: string
           template_id: string
+          tenant_id: string
           updated_at: string
+          wa_id: number
         }
         Insert: {
           appointment_uuid?: string | null
           cancel_by?: string | null
-          contact_id: number
           created_at?: string
           id?: string
           patient_response?: string | null
           send_by: string
           status: string
           template_id: string
+          tenant_id: string
           updated_at?: string
+          wa_id: number
         }
         Update: {
           appointment_uuid?: string | null
           cancel_by?: string | null
-          contact_id?: number
           created_at?: string
           id?: string
           patient_response?: string | null
           send_by?: string
           status?: string
           template_id?: string
+          tenant_id?: string
           updated_at?: string
+          wa_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "appointment_reminders_contact_id_fkey"
-            columns: ["contact_id"]
+            foreignKeyName: "appointment_reminders_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "contacts"
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -279,7 +282,7 @@ export type Database = {
           tenant_id: string
           unread_count: number
           voided: boolean
-          wa_id: string
+          wa_id: number
         }
         Insert: {
           assigned_to?: string | null
@@ -295,7 +298,7 @@ export type Database = {
           tenant_id: string
           unread_count?: number
           voided?: boolean
-          wa_id: string
+          wa_id: number
         }
         Update: {
           assigned_to?: string | null
@@ -311,7 +314,7 @@ export type Database = {
           tenant_id?: string
           unread_count?: number
           voided?: boolean
-          wa_id?: string
+          wa_id?: number
         }
         Relationships: [
           {
@@ -334,7 +337,7 @@ export type Database = {
         Row: {
           active_flow_key: string | null
           assigned_to_label: string | null
-          contact_id: number
+          contact_wa_id: number
           created_at: string
           flow_state: Json
           flow_status: string
@@ -352,7 +355,7 @@ export type Database = {
         Insert: {
           active_flow_key?: string | null
           assigned_to_label?: string | null
-          contact_id: number
+          contact_wa_id: number
           created_at?: string
           flow_state?: Json
           flow_status?: string
@@ -370,7 +373,7 @@ export type Database = {
         Update: {
           active_flow_key?: string | null
           assigned_to_label?: string | null
-          contact_id?: number
+          contact_wa_id?: number
           created_at?: string
           flow_state?: Json
           flow_status?: string
@@ -386,13 +389,6 @@ export type Database = {
           voided?: boolean
         }
         Relationships: [
-          {
-            foreignKeyName: "conversations_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "conversations_phone_number_id_fkey"
             columns: ["phone_number_id"]
@@ -431,7 +427,15 @@ export type Database = {
           conversation_id?: string
           id?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "handover_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       message_template: {
         Row: {
@@ -476,15 +480,7 @@ export type Database = {
           updated_at?: string
           voided?: boolean
         }
-        Relationships: [
-          {
-            foreignKeyName: "message_template_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       messages: {
         Row: {
@@ -499,6 +495,7 @@ export type Database = {
           read_at: string | null
           read_by_user_at: string | null
           sent_at: string | null
+          tenant_id: string
           wam_id: string
         }
         Insert: {
@@ -513,6 +510,7 @@ export type Database = {
           read_at?: string | null
           read_by_user_at?: string | null
           sent_at?: string | null
+          tenant_id: string
           wam_id: string
         }
         Update: {
@@ -527,14 +525,15 @@ export type Database = {
           read_at?: string | null
           read_by_user_at?: string | null
           sent_at?: string | null
+          tenant_id?: string
           wam_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "messages_chat_fk"
-            columns: ["chat_id"]
+            foreignKeyName: "messages_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "contacts"
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -658,78 +657,166 @@ export type Database = {
         }
         Relationships: []
       }
-      tenants: {
+      tenant_contacts: {
         Row: {
-          address_line1: string | null
-          address_line2: string | null
-          city: string | null
-          config: Json
-          country: string | null
           created_at: string
-          echo_handover_mute_seconds: number
-          email: string | null
-          emergency_contacts: Json
+          email: string
           id: string
-          languages: string[]
+          is_primary: boolean
           name: string
-          phone_alt: string | null
-          phone_main: string | null
-          postal_code: string | null
-          region: string | null
-          retention_days: number | null
-          summary: string | null
-          timezone: string
+          notes: string | null
+          phone: number | null
+          role: Database["public"]["Enums"]["tenant_contact_role"]
+          tenant_id: string
+          updated_at: string
           voided: boolean
-          website: string | null
-          working_hours: Json
         }
         Insert: {
-          address_line1?: string | null
-          address_line2?: string | null
-          city?: string | null
-          config?: Json
-          country?: string | null
           created_at?: string
-          echo_handover_mute_seconds?: number
-          email?: string | null
-          emergency_contacts?: Json
+          email: string
           id?: string
-          languages?: string[]
+          is_primary?: boolean
           name: string
-          phone_alt?: string | null
-          phone_main?: string | null
-          postal_code?: string | null
-          region?: string | null
-          retention_days?: number | null
-          summary?: string | null
-          timezone?: string
+          notes?: string | null
+          phone?: number | null
+          role: Database["public"]["Enums"]["tenant_contact_role"]
+          tenant_id: string
+          updated_at?: string
           voided?: boolean
-          website?: string | null
-          working_hours?: Json
         }
         Update: {
-          address_line1?: string | null
-          address_line2?: string | null
-          city?: string | null
-          config?: Json
-          country?: string | null
           created_at?: string
-          echo_handover_mute_seconds?: number
-          email?: string | null
-          emergency_contacts?: Json
+          email?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          notes?: string | null
+          phone?: number | null
+          role?: Database["public"]["Enums"]["tenant_contact_role"]
+          tenant_id?: string
+          updated_at?: string
+          voided?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_contacts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_integrations: {
+        Row: {
+          config: Json
+          created_at: string
+          credentials: Json | null
+          id: string
+          integration_type: string
+          is_active: boolean
+          is_primary: boolean
+          last_error: string | null
+          last_sync_at: string | null
+          name: string | null
+          priority: number
+          provider: string
+          tenant_id: string
+          updated_at: string
+          voided: boolean
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          credentials?: Json | null
+          id?: string
+          integration_type: string
+          is_active?: boolean
+          is_primary?: boolean
+          last_error?: string | null
+          last_sync_at?: string | null
+          name?: string | null
+          priority?: number
+          provider: string
+          tenant_id: string
+          updated_at?: string
+          voided?: boolean
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          credentials?: Json | null
+          id?: string
+          integration_type?: string
+          is_active?: boolean
+          is_primary?: boolean
+          last_error?: string | null
+          last_sync_at?: string | null
+          name?: string | null
+          priority?: number
+          provider?: string
+          tenant_id?: string
+          updated_at?: string
+          voided?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_integrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          auth_owner_user_id: string | null
+          billing_external_id: string | null
+          created_at: string
+          features: Json
+          id: string
+          languages: string[]
+          meta_data: Json
+          name: string
+          plan_code: string
+          slug: string
+          status: Database["public"]["Enums"]["tenant_status"]
+          timezone: string
+          updated_at: string
+          voided: boolean
+        }
+        Insert: {
+          auth_owner_user_id?: string | null
+          billing_external_id?: string | null
+          created_at?: string
+          features?: Json
           id?: string
           languages?: string[]
-          name?: string
-          phone_alt?: string | null
-          phone_main?: string | null
-          postal_code?: string | null
-          region?: string | null
-          retention_days?: number | null
-          summary?: string | null
+          meta_data?: Json
+          name: string
+          plan_code?: string
+          slug: string
+          status?: Database["public"]["Enums"]["tenant_status"]
           timezone?: string
+          updated_at?: string
           voided?: boolean
-          website?: string | null
-          working_hours?: Json
+        }
+        Update: {
+          auth_owner_user_id?: string | null
+          billing_external_id?: string | null
+          created_at?: string
+          features?: Json
+          id?: string
+          languages?: string[]
+          meta_data?: Json
+          name?: string
+          plan_code?: string
+          slug?: string
+          status?: Database["public"]["Enums"]["tenant_status"]
+          timezone?: string
+          updated_at?: string
+          voided?: boolean
         }
         Relationships: []
       }
@@ -850,6 +937,14 @@ export type Database = {
         | "chat.write"
       app_role: "admin" | "agent"
       conversation_mode: "bot" | "handover_pending" | "human" | "closed"
+      tenant_contact_role:
+        | "owner"
+        | "admin"
+        | "billing"
+        | "technical"
+        | "support"
+        | "other"
+      tenant_status: "trialing" | "active" | "suspended" | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -985,6 +1080,15 @@ export const Constants = {
       ],
       app_role: ["admin", "agent"],
       conversation_mode: ["bot", "handover_pending", "human", "closed"],
+      tenant_contact_role: [
+        "owner",
+        "admin",
+        "billing",
+        "technical",
+        "support",
+        "other",
+      ],
+      tenant_status: ["trialing", "active", "suspended", "closed"],
     },
   },
 } as const

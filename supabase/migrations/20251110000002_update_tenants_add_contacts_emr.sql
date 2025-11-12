@@ -1,6 +1,9 @@
 -- ============================================================================
--- Migration: Update tenants structure and add tenant_contacts, tenant_emr_configs
--- Implements changes from updated additional_schema.sql
+-- Migration: Simplified multi-tenant schema
+-- - Simplified tenants table (config in JSONB)
+-- - Generic tenant_integrations (for EMR, payment, SMS, etc.)
+-- - Separate tenant_contacts table (owner, billing, support)
+-- - Added tenant_id to messages & appointment_reminders for fast RLS
 -- ============================================================================
 
 -- ============================================================================
@@ -28,12 +31,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'emr_type') THEN
-    CREATE TYPE emr_type AS ENUM ('none','openmrs','other');
-  END IF;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- emr_type ENUM removed - using TEXT for integration_type and provider instead
 
 -- ============================================================================
 -- DROP AND RECREATE TENANTS TABLE WITH NEW STRUCTURE
@@ -50,50 +48,53 @@ DROP TABLE IF EXISTS contacts CASCADE;
 DROP TABLE IF EXISTS phone_numbers CASCADE;
 DROP TABLE IF EXISTS tenants CASCADE;
 
--- Recreate tenants with new structure
+-- Recreate tenants with simplified structure
 CREATE TABLE "public"."tenants" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  -- Stable business key for URLs, scripts, configs
+  -- ========================================
+  -- IDENTITY & QUERY FIELDS
+  -- ========================================
   "slug" TEXT NOT NULL UNIQUE,
-
-  -- Customer identity
   "name" TEXT NOT NULL,
   "status" tenant_status NOT NULL DEFAULT 'trialing',
   "plan_code" TEXT NOT NULL DEFAULT 'free',
-
-  -- Primary account owner
-  "owner_name" TEXT NOT NULL,
-  "owner_email" TEXT NOT NULL,
-
-  -- Billing contact
-  "billing_email" TEXT NOT NULL,
-  "billing_phone" TEXT,
-
-  -- Support contact
-  "support_email" TEXT,
-  "support_phone" TEXT,
-
-  -- Location / timezone
-  "country_code" TEXT,
-  "city" TEXT,
   "timezone" TEXT NOT NULL DEFAULT 'Asia/Karachi',
 
-  -- Integration links
+  -- ========================================
+  -- LOCALIZATION & FEATURES
+  -- ========================================
+  "languages" TEXT[] NOT NULL DEFAULT '{en}',
+  "features" JSONB NOT NULL DEFAULT '{
+    "appointment_reminders": true,
+    "broadcast_enabled": true,
+    "ai_responses": false
+  }'::jsonb,
+
+  -- ========================================
+  -- METADATA (optional tenant preferences)
+  -- ========================================
+  "meta_data" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  -- Optional: working_hours, branding, notifications, etc.
+
+  -- ========================================
+  -- INTEGRATION LINKS
+  -- ========================================
   "auth_owner_user_id" UUID,
   "billing_external_id" TEXT,
 
-  -- Soft delete
+  -- ========================================
+  -- METADATA
+  -- ========================================
   "voided" BOOLEAN NOT NULL DEFAULT FALSE,
-
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
   "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- Indexes for tenants
-CREATE INDEX idx_tenants_status ON tenants(status);
+CREATE INDEX idx_tenants_status ON tenants(status) WHERE voided = false;
 CREATE INDEX idx_tenants_auth_owner ON tenants(auth_owner_user_id);
-CREATE INDEX idx_tenants_billing_email ON tenants(billing_email);
+CREATE INDEX idx_tenants_slug ON tenants(slug);
 
 -- ============================================================================
 -- CREATE TENANT_CONTACTS TABLE
@@ -106,7 +107,7 @@ CREATE TABLE "public"."tenant_contacts" (
   "role" tenant_contact_role NOT NULL,
   "name" TEXT NOT NULL,
   "email" TEXT NOT NULL,
-  "phone" TEXT,
+  "phone" NUMERIC,
   "notes" TEXT,
 
   "is_primary" BOOLEAN NOT NULL DEFAULT FALSE,
@@ -127,27 +128,64 @@ CREATE UNIQUE INDEX uq_tenant_contacts_primary_role
   WHERE is_primary = true AND voided = false;
 
 -- ============================================================================
--- CREATE TENANT_EMR_CONFIGS TABLE
+-- CREATE TENANT_INTEGRATIONS TABLE (generic for all external systems)
 -- ============================================================================
 
-CREATE TABLE "public"."tenant_emr_configs" (
+CREATE TABLE "public"."tenant_integrations" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "tenant_id" UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
 
-  "emr_type" emr_type NOT NULL DEFAULT 'none',
-  "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+  -- ========================================
+  -- INTEGRATION IDENTITY
+  -- ========================================
+  "integration_type" TEXT NOT NULL,
+  -- 'emr' | 'payment' | 'sms' | 'calendar' | 'analytics' | 'crm' | 'other'
 
-  -- EMR + workflow + AI config as one dedicated blob
-  "emr_config" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "provider" TEXT NOT NULL,
+  -- EMR: 'openmrs' | 'custom' | 'epic'
+  -- Payment: 'stripe' | 'jazzcash' | 'easypaisa'
+  -- SMS: 'twilio' | 'local_gateway'
+
+  "name" TEXT,
+  -- User-friendly label: "Main Hospital EMR", "Backup Payment Gateway"
+
+  -- ========================================
+  -- STATUS & PRIORITY
+  -- ========================================
+  "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+  "is_primary" BOOLEAN NOT NULL DEFAULT FALSE,
+  "priority" INTEGER NOT NULL DEFAULT 0,
+
+  -- ========================================
+  -- CONFIGURATION & CREDENTIALS
+  -- ========================================
+  "config" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  -- Integration-specific configuration
+
+  "credentials" JSONB,
+  -- API keys, tokens (should be encrypted!)
+
+  -- ========================================
+  -- METADATA
+  -- ========================================
+  "last_sync_at" TIMESTAMP WITH TIME ZONE,
+  "last_error" TEXT,
 
   "voided" BOOLEAN NOT NULL DEFAULT FALSE,
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+
+  -- Unique constraint
+  UNIQUE ("tenant_id", "integration_type", "provider", "name")
 );
 
--- Index for tenant_emr_configs
-CREATE INDEX idx_tenant_emr_configs_tenant
-  ON tenant_emr_configs(tenant_id)
+-- Indexes for tenant_integrations
+CREATE INDEX idx_tenant_integrations_tenant
+  ON tenant_integrations(tenant_id)
+  WHERE voided = false AND is_active = true;
+
+CREATE INDEX idx_tenant_integrations_type
+  ON tenant_integrations(tenant_id, integration_type, is_primary)
   WHERE voided = false AND is_active = true;
 
 -- ============================================================================
@@ -157,7 +195,7 @@ CREATE INDEX idx_tenant_emr_configs_tenant
 CREATE TABLE "public"."phone_numbers" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "tenant_id" UUID NOT NULL REFERENCES "tenants"("id") ON DELETE CASCADE,
-  "wa_phone_number_id" TEXT NOT NULL,
+  "wa_phone_number" NUMERIC NOT NULL,
   "waba_id" TEXT,
   "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
   "auto_handover_on_echo" BOOLEAN NOT NULL DEFAULT TRUE,
@@ -165,7 +203,7 @@ CREATE TABLE "public"."phone_numbers" (
   "working_hours_override" JSONB,
   "voided" BOOLEAN NOT NULL DEFAULT FALSE,
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  UNIQUE ("tenant_id", "wa_phone_number_id")
+  UNIQUE ("tenant_id", "wa_phone_number")
 );
 
 CREATE INDEX idx_phone_numbers_tenant ON phone_numbers(tenant_id);
@@ -291,7 +329,7 @@ CREATE TABLE "public"."handover_events" (
 -- ============================================================================
 
 CREATE TABLE "public"."appointment_reminders" (
-  "id" UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+  "id" UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   "tenant_id" UUID NOT NULL REFERENCES "tenants"("id") ON DELETE CASCADE,
   "wa_id" NUMERIC NOT NULL,  -- References contacts.wa_id (phone number)
   "send_by" CHARACTER VARYING(20) NOT NULL,
@@ -471,7 +509,7 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tenant_emr_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant_integrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE phone_numbers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
@@ -503,13 +541,13 @@ CREATE POLICY tn_modify_tenant_contacts ON tenant_contacts
   FOR ALL USING (tenant_id::text = COALESCE(auth.jwt()->>'tenant_id',''))
   WITH CHECK (tenant_id::text = COALESCE(auth.jwt()->>'tenant_id',''));
 
--- Tenant EMR configs
-DROP POLICY IF EXISTS tn_select_emr_configs ON tenant_emr_configs;
-CREATE POLICY tn_select_emr_configs ON tenant_emr_configs
+-- Tenant integrations
+DROP POLICY IF EXISTS tn_select_integrations ON tenant_integrations;
+CREATE POLICY tn_select_integrations ON tenant_integrations
   FOR SELECT USING (tenant_id::text = COALESCE(auth.jwt()->>'tenant_id','') AND voided = false);
 
-DROP POLICY IF EXISTS tn_modify_emr_configs ON tenant_emr_configs;
-CREATE POLICY tn_modify_emr_configs ON tenant_emr_configs
+DROP POLICY IF EXISTS tn_modify_integrations ON tenant_integrations;
+CREATE POLICY tn_modify_integrations ON tenant_integrations
   FOR ALL USING (tenant_id::text = COALESCE(auth.jwt()->>'tenant_id',''))
   WITH CHECK (tenant_id::text = COALESCE(auth.jwt()->>'tenant_id',''));
 
@@ -603,9 +641,14 @@ CREATE POLICY tn_modify_appointment_reminders ON appointment_reminders
 -- GRANTS
 -- ============================================================================
 
-GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."appointment_reminders" TO "anon";
-GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."appointment_reminders" TO "authenticated";
-GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."appointment_reminders" TO "service_role";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."tenant_contacts" TO "authenticated";
+GRANT ALL ON TABLE "public"."tenant_contacts" TO "service_role";
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."tenant_integrations" TO "authenticated";
+GRANT ALL ON TABLE "public"."tenant_integrations" TO "service_role";
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."appointment_reminders" TO "authenticated";
+GRANT ALL ON TABLE "public"."appointment_reminders" TO "service_role";
 
 -- ============================================================================
 -- REALTIME PUBLICATION

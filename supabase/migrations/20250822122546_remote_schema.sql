@@ -1,7 +1,5 @@
-drop extension if exists "uuid-ossp";
-create extension "uuid-ossp";
 create table "public"."appointment_reminders" (
-    "id" uuid not null default uuid_generate_v4(),
+    "id" uuid not null default gen_random_uuid(),
     "wa_id" numeric not null,
     "send_by" character varying(20) not null,
     "cancel_by" character varying(20),

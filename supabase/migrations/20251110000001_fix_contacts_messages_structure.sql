@@ -118,7 +118,7 @@ CREATE INDEX idx_conversations_tenant_updated ON conversations(tenant_id, update
 -- ============================================================================
 
 CREATE TABLE "public"."appointment_reminders" (
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     "contact_id" BIGINT NOT NULL,
     "send_by" CHARACTER VARYING(20) NOT NULL,
     "cancel_by" CHARACTER VARYING(20),
