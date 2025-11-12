@@ -3,7 +3,7 @@ import SetupServerFactory from "@/lib/repositories/setup/SetupServerFactory"
 import SetupFrontendClient from "./pageClient"
 
 export default async function SetupFrontend() {
-    const setupRepository: SetupRepository = SetupServerFactory.getInstance()
+    const setupRepository: SetupRepository = await SetupServerFactory.getInstance()
     const setupPendingItems = await setupRepository.getIncompleteItems()
     return (
         <SetupFrontendClient pendingItems={setupPendingItems} />

@@ -27,10 +27,10 @@ import { useSupabase } from "@/components/supabase-provider"
 
 const FormSchema = z.object({
     name: z.string({
-        required_error: "Name is required",
+        message: "Name is required",
     }).min(3),
     wa_number: z.string({
-        required_error: "Mobile number is required",
+        message: "Mobile number is required",
     }).min(7),
     country: countryFormType
 })
@@ -48,9 +48,17 @@ export function AddContactDialog({ children, onSuccessfulAdd }: { children: Reac
     })
 
     async function onSubmit(data: z.infer<typeof FormSchema>) {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const tenantId = (sessionData.session?.access_token &&
+            JSON.parse(atob(sessionData.session.access_token.split('.')[1])).tenant_id) || ''
+
         const mobileNumber = data.country.phoneCode.replace(/[\+\-]/, '') + data.wa_number
         const wa_id = Number.parseInt(mobileNumber)
-        const { error } = await supabase.from(DBTables.Contacts).insert({ profile_name: data.name, wa_id: wa_id })
+        const { error } = await supabase.from(DBTables.Contacts).insert({
+            profile_name: data.name,
+            wa_id: wa_id,
+            tenant_id: tenantId
+        })
         if (error) throw error
         form.reset()
         setDialogOpen(false)

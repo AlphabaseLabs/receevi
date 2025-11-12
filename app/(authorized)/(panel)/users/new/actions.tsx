@@ -18,7 +18,7 @@ export async function createUser(data: z.infer<typeof userSchema>) {
     // Here you would typically save the user to your database
     // For this example, we'll just log the data and simulate a delay
     console.log('Creating user:', validatedData)
-    const supabaseServer = createClient()
+    const supabaseServer = await createClient()
     const {data: session, error: sessionGetError} = await supabaseServer.auth.getSession()
     if (sessionGetError) {
         throw sessionGetError

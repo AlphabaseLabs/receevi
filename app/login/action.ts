@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 
 
 export async function login(formData: FormData) {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // type-casting here for convenience
     // in practice, you should validate your inputs

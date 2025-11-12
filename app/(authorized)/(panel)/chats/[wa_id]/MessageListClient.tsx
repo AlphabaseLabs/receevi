@@ -46,7 +46,7 @@ export default function MessageListClient({ from }: { from: string }) {
         const query = supabase
             .from(DBTables.Messages)
             .select('*')
-            .eq('chat_id', from)
+            .eq('chat_id', Number(from))
             .limit(1000)
             .order('created_at', { ascending: false })
         if (before) {

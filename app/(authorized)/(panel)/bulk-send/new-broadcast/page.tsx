@@ -15,8 +15,8 @@ function convertToOptions(value: string) {
 }
 
 export default async function NewBroadcastPage() {
-    const messageTemplateRepo = MessageTemplateServerFactory.getInstance()
-    const contactTagRepo = ContactTagServerFactory.getInstance()
+    const messageTemplateRepo = await MessageTemplateServerFactory.getInstance()
+    const contactTagRepo = await ContactTagServerFactory.getInstance()
     const messageTemplates = (await messageTemplateRepo.getMessageTemplateUniqueNames()).map(convertToOptions)
     const contactTags = (await contactTagRepo.getContactTags()).map(convertToOptions)
     return (

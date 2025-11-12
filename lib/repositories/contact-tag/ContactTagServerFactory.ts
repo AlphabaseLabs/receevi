@@ -4,9 +4,9 @@ import { createClient as createServerClient } from "@/utils/supabase-server";
 
 export default class ContactTagServerFactory {
     private static _instance: ContactTagRepository;
-    public static getInstance(): ContactTagRepository {
+    public static async getInstance(): Promise<ContactTagRepository> {
         if (!ContactTagServerFactory._instance) {
-            const client = createServerClient();
+            const client = await createServerClient();
             ContactTagServerFactory._instance = new ContactTagRepositorySupabaseImpl(client)
         }
         return ContactTagServerFactory._instance

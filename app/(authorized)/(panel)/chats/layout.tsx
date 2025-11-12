@@ -7,7 +7,7 @@ import { ContactContextProvider } from "./CurrentContactContext";
 export default async function ChatsLayout({ children }: {
     children: React.ReactNode;
 }) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data: allAgentsId } = await supabase.from('user_roles').select('user_id').eq('role', 'agent')
     const agentUserIds = allAgentsId?.map((ag) => ag.user_id)

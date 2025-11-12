@@ -4,7 +4,7 @@ import { DBTables } from "@/lib/enums/Tables";
 import ChatHeader from "./ChatHeader";
 import MessageListClient from "./MessageListClient";
 import SendMessageWrapper from "./SendMessageWrapper";
-import { useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { useSupabase } from "@/components/supabase-provider";
 import ContactBrowserFactory from "@/lib/repositories/contacts/ContactBrowserFactory";
 import { Contact } from "@/types/contact";
@@ -16,9 +16,8 @@ import { CircleAlertIcon } from "lucide-react";
 import { UPDATE_CURRENT_CONTACT, useCurrentContactDispatch } from "../CurrentContactContext";
 import { isLessThanADay } from "@/lib/time-utils";
 
-export const revalidate = 0
-
-export default function ContactChat({ params }: { params: { wa_id: string } }) {
+export default function ContactChat({ params }: { params: Promise<{ wa_id: string }> }) {
+    const { wa_id } = use(params);
     const [isChatWindowOpen, setChatWindowOpen] = useState<boolean | undefined>()
     const [lastMessageReceivedAt, setLastMessageReceivedAt] = useState<Date | undefined>()
     const { supabase } = useSupabase()
@@ -28,7 +27,7 @@ export default function ContactChat({ params }: { params: { wa_id: string } }) {
     const setCurrentContact = useCurrentContactDispatch()
 
     useEffect(() => {
-        contactRepository.getContactById(params.wa_id).then((contact) => {
+        contactRepository.getContactById(wa_id).then((contact) => {
             if (contact) {
                 setContact(contact)
                 setLastMessageReceivedAt(contact.last_message_received_at ? new Date(contact.last_message_received_at) : undefined)
@@ -37,7 +36,7 @@ export default function ContactChat({ params }: { params: { wa_id: string } }) {
                 }
             }
         })
-    }, [contactRepository, setChatWindowOpen, params.wa_id, setLastMessageReceivedAt, setContact, setCurrentContact])
+    }, [contactRepository, setChatWindowOpen, wa_id, setLastMessageReceivedAt, setContact, setCurrentContact])
 
     useEffect(() => {
         if (lastMessageReceivedAt) {
@@ -55,7 +54,7 @@ export default function ContactChat({ params }: { params: { wa_id: string } }) {
                 event: 'UPDATE',
                 schema: 'public',
                 table: 'contacts',
-                filter: `wa_id=eq.${params.wa_id}`
+                filter: `wa_id=eq.${wa_id}`
             }, payload => {
                 if (payload.new.last_message_received_at) {
                     setLastMessageReceivedAt(new Date(payload.new.last_message_received_at))
@@ -63,12 +62,12 @@ export default function ContactChat({ params }: { params: { wa_id: string } }) {
             })
             .subscribe()
         return () => { supabase.removeChannel(channel) }
-    }, [supabase, params.wa_id])
+    }, [supabase, wa_id])
 
     const onTemplateSubmit = useCallback(async (req: TemplateRequest) => {
         setMessageTemplateSending(true)
         const formData = new FormData();
-        formData.set('to', params.wa_id);
+        formData.set('to', wa_id);
         formData.set('template', JSON.stringify(req));
         try {
             const response = await fetch('/api/sendMessage', {
@@ -83,7 +82,7 @@ export default function ContactChat({ params }: { params: { wa_id: string } }) {
         } finally {
             setMessageTemplateSending(false)
         }
-    }, [params.wa_id, setMessageTemplateSending])
+    }, [wa_id, setMessageTemplateSending])
 
     return (
         <div className="h-full flex flex-row">
@@ -95,7 +94,7 @@ export default function ContactChat({ params }: { params: { wa_id: string } }) {
                             return (
                                 <>
                                     <ChatHeader contact={contact} />
-                                    <MessageListClient from={params.wa_id} />
+                                    <MessageListClient from={wa_id} />
                                     {(() => {
                                         if (typeof contact !== 'undefined') {
                                             return (

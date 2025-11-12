@@ -4,9 +4,9 @@ import { SetupRepositorySupabaseImpl } from "./SetupRepositorySupabaseImpl";
 
 export default class SetupServerFactory {
     private static _instance: SetupRepository;
-    public static getInstance(): SetupRepository {
+    public static async getInstance(): Promise<SetupRepository> {
         if (!SetupServerFactory._instance) {
-            const client = createServerClient();
+            const client = await createServerClient();
             SetupServerFactory._instance = new SetupRepositorySupabaseImpl(client)
         }
         return SetupServerFactory._instance

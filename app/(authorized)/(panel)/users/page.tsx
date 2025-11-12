@@ -48,7 +48,7 @@ export default async function UsersPage(
     const searchString = searchParams['search']?.trim()
     const search = searchString ? `%${searchString}%` : undefined
 
-    const supabase = createClient()
+    const supabase = await createClient()
     let query = supabase
         .from('profiles')
         .select('*', { count: 'exact' })

@@ -9,7 +9,7 @@ import {
 import { Contact } from "@/types/contact"
 import { flexRender, Table as TanTable } from "@tanstack/react-table"
 
-export function ContactsTable({ table, totalColumns }: { table: TanTable<Contact>, totalColumns: number }): JSX.Element {
+export function ContactsTable({ table, totalColumns }: { table: TanTable<Contact>, totalColumns: number }) {
     return (
         <Table>
             <TableHeader>

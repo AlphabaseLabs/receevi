@@ -21,7 +21,7 @@ type BulkSendRequest = {
 }
 
 export async function getTemplateLanguges(templateName: string): Promise<string[]> {
-    const messageTemplateRepo = MessageTemplateServerFactory.getInstance()
+    const messageTemplateRepo = await MessageTemplateServerFactory.getInstance()
     return await messageTemplateRepo.getMessageTemplateLanguages(templateName)
 }
 
@@ -38,7 +38,7 @@ export async function bulkSend(prevState: {message: string}, formData: FormData)
         language: parsed.language,
         contactTags: JSON.parse(parsed.contact_tags)
     }
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
     const { error } = await supabase.functions.invoke('bulk-send', {
         body: bulkSendRequest
     })

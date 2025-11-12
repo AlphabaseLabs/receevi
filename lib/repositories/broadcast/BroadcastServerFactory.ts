@@ -4,9 +4,9 @@ import { createClient as createServerClient } from "@/utils/supabase-server";
 
 export default class BroadcastServerFactory {
     private static _instance: BroadcastRepository;
-    public static getInstance(): BroadcastRepository {
+    public static async getInstance(): Promise<BroadcastRepository> {
         if (!BroadcastServerFactory._instance) {
-            const client = createServerClient();
+            const client = await createServerClient();
             BroadcastServerFactory._instance = new BroadcastRepositorySupabaseImpl(client)
         }
         return BroadcastServerFactory._instance

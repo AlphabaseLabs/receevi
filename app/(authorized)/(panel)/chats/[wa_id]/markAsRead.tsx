@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase-server";
 
 async function markAsRead({messageIds, chatId}: { messageIds: number[], chatId: string}) {
-    const supabase = createClient()
+    const supabase = await createClient()
     const chunkSize = 100;
     for (let i = 0; i < messageIds.length; i += chunkSize) {
         const chunk = messageIds.slice(i, i + chunkSize);

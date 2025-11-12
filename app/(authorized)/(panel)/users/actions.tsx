@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service-client'
 import { createClient } from '@/utils/supabase-server'
 
 export async function deleteUser(userId: string) {
-    const supabaseServer = createClient()
+    const supabaseServer = await createClient()
     const {data: session, error: sessionGetError} = await supabaseServer.auth.getSession()
     if (sessionGetError) {
         throw sessionGetError

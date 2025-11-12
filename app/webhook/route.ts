@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: NextRequest) {
-  const headersList = headers();
+  const headersList = await headers();
   const xHubSigrature256 = headersList.get('x-hub-signature-256');
   const rawRequestBody = await request.text()
   if (!xHubSigrature256 || !verifyWebhook(rawRequestBody, xHubSigrature256)) {

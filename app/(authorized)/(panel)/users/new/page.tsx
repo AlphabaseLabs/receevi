@@ -16,7 +16,7 @@ export default async function UserCreationForm(
     }
     console.log('userId', userId)
     if (userId) {
-        const supabase = createClient()
+        const supabase = await createClient()
         const {data: userProfileData, error: profileError} = await supabase.from('profiles').select('*').eq('id', userId)
         if (profileError) {
             throw profileError

@@ -226,7 +226,7 @@ async function sendWhatsAppMessage(to: string, message: string | null | undefine
 }
 
 export async function POST(request: NextRequest) {
-    const supabase = createClient()
+    const supabase = await createClient()
     const {
         data: { user },
     } = await supabase.auth.getUser()

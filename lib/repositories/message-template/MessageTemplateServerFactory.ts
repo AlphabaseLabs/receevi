@@ -4,9 +4,9 @@ import { createClient as createServerClient } from "@/utils/supabase-server";
 
 export default class MessageTemplateServerFactory {
     private static _instance: MessageTemplateRepository;
-    public static getInstance(): MessageTemplateRepository {
+    public static async getInstance(): Promise<MessageTemplateRepository> {
         if (!MessageTemplateServerFactory._instance) {
-            const client = createServerClient();
+            const client = await createServerClient();
             MessageTemplateServerFactory._instance = new MessageTemplateRepositorySupabaseImpl(client)
         }
         return MessageTemplateServerFactory._instance

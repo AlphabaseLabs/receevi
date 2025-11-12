@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/table"
 import BroadcastServerFactory from "@/lib/repositories/broadcast/BroadcastServerFactory"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import PaginationButton from "./PaginationButton"
 import WatchForChanges from "./WatchForChanges"
 
@@ -30,7 +29,7 @@ export default async function BulkSendPage({
         }
     }
 
-    const broadcastServer = BroadcastServerFactory.getInstance()
+    const broadcastServer = await BroadcastServerFactory.getInstance()
     const broadcasts = await broadcastServer.getAllBroadcasts(page)
 
     return (
