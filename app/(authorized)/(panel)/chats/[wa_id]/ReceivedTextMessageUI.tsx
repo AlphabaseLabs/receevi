@@ -14,11 +14,11 @@ export default function ReceivedTextMessageUI(props: { textMessage: TextMessage 
                     h2: ({ node, ...props }) => <h2 className="text-base font-semibold mb-1 mt-2" {...props} />,
                     h3: ({ node, ...props }) => <h3 className="text-base font-semibold mb-1 mt-1" {...props} />,
                     // Paragraphs
-                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                    p: ({ node, ...props }) => <p className="mb-1 last:mb-0" {...props} />,
                     // Lists
-                    ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 space-y-0.5" {...props} />,
-                    ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 space-y-0.5" {...props} />,
-                    li: ({ node, ...props }) => <li className="ml-2" {...props} />,
+                    ul: ({ node, ...props }) => <ul className="list-disc list-outside ml-4 mb-1 space-y-0" {...props} />,
+                    ol: ({ node, ...props }) => <ol className="list-decimal list-outside ml-4 mb-1 space-y-0" {...props} />,
+                    li: ({ node, ...props }) => <li className="mb-0.5 leading-snug [&>p]:inline [&>p]:mb-0" {...props} />,
                     // Code
                     code: ({ node, className, ...props }: any) => {
                         const isInline = !className?.includes('language-');
